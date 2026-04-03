@@ -30,5 +30,5 @@ app.post('/api/chat',async(req,res)=>{
 });
 const PORT=3000;
 app.listen(PORT,()=>{
-    console.log(`✅ 後端伺服器已啟動：http://localhost:${PORT}`);
+    console.log(`✅ 後端伺服器已啟動`);
 });

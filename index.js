@@ -7,7 +7,7 @@ async function sendMessage(){
     document.getElementById("input").value="";
     document.getElementById("board").innerHTML+="<div class='msg_board'><div id='loading'><span id='loading_span'>AI思考中...</span></div></div></div>";
     try{
-        const response=await fetch('http://localhost:3000/api/chat',{
+        const response=await fetch('https://personal-webside.onrender.com/api/chat',{
             method:'POST',
             headers:{'Content-Type':'application/json'},
             body:JSON.stringify({message:message})
