@@ -1,0 +1,89 @@
+body{
+    background-color: black;
+}
+#title{
+    position: absolute;
+    left: 50%;
+    top: 5%;
+    transform: translateX(-50%);
+    color: aqua;
+    font-size: 3em;
+}
+#board{
+    position: absolute;
+    left: 50%;
+    top: 15%;
+    transform: translateX(-50%);
+    width: 90%;
+    height: 60%;
+    border: 1px aqua solid;
+    border-radius: 10px;
+    background-color: black;
+}
+#input{
+    position: absolute;
+    left: 5%;
+    top: 80%;
+    width: 20%;
+    height: 2.5%;
+    border: 1px aqua solid;
+    border-radius: 10px;
+    background-color: black;
+    color: aqua;
+}
+#input:focus{
+    outline: none;
+}
+#send{
+    position: absolute;
+    left: 30%;
+    top: 80%;
+    width: 5%;
+    height: 3%;
+    border: 1px aqua solid;
+    border-radius: 100px;
+    cursor: default;
+}
+#send_span{
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%,-50%);
+    color: aqua;
+}
+#loading_span{
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    color: gray;
+}
+.user_msg,.ai_msg,.error{
+    position: unset;
+    width: fit-content;
+    max-width: 80%;
+    height: fit-content;
+    border: transparent;
+    border-radius: 10px;
+    opacity: 0.7;
+}
+.user_msg span,.ai_msg span,.error span{
+    color: black;
+    font-size: 1.5em;
+}
+.msg_board{
+    position: unset;
+    width: 100%;
+    overflow: hidden;
+}
+.user_msg{
+    background-color: white;
+    float: right;
+}
+.ai_msg{
+    background-color: white;
+    float: left;
+}
+.error{
+    background-color: red;
+    float: left;
+}
