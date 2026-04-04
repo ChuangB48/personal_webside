@@ -40,7 +40,11 @@ app.post('/api/chat',async(req,res)=>{
                 24. 不需要每一則訊息都跟使用者招呼，只有使用者向你問好或回答第一則信息時需要。
                 25. 如果有人跟你打招呼，請引導他問關於你的問題。
             `
-        });
+        },
+        {
+            apiVersion:'v1'
+        }
+    );
         const result=await model.generateContent(userMessage);
         const aiReply=result.response.text();
         res.json({reply:aiReply});
