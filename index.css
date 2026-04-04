@@ -20,7 +20,7 @@ body{
     border-radius: 10px;
     background-color: black;
     overflow-x: hidden;
-    overflow-y: scroll;
+    overflow-y: overlay;
 }
 #input{
     position: absolute;
@@ -88,4 +88,21 @@ body{
 .error{
     background-color: red;
     float: left;
+}
+::-webkit-scrollbar {
+    width: 7px;
+}
+::-webkit-scrollbar-button {
+    background: transparent;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-track-piece {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background-color: gray;
+}
+::-webkit-scrollbar-track {
+    box-shadow: transparent;
 }
