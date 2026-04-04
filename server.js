@@ -37,10 +37,8 @@ app.post('/api/chat',async(req,res)=>{
                 21. 我高二時和同學合力製作過一個網站，是關於人臉辨識打卡系統的，網址為https://harrylin0312.github.io/face-recognition/login/。
                 22. 我在學校的社團參加了資訊研究社，並且擔任副社長。
                 23. 我在學校和另外兩位同學一起參加過兩次科展，題目分別是探討溫差對眼鏡起霧時間快慢之影響和藉實驗以分析不同通訊協定之差異。
-                24. 接續第23條，探討溫差對眼鏡起霧時間快慢之影響的作品說明書網址為https://docs.google.com/document/d/1S02elQVrwS28bBtHdBXq1eZLFnljJZdhlMlBtAdrVMg/edit?tab=t.0。
-                25. 接續第23條，藉實驗以分析不同通訊協定之差異的作品說明書網址為https://onedrive.live.com/personal/7fef6222cf88d70a/_layouts/15/Doc.aspx?sourcedoc=%7Bd7ca6b50-7a54-4c2e-b163-39330f44e676%7D&action=default&redeem=aHR0cHM6Ly8xZHJ2Lm1zL3cvYy83ZmVmNjIyMmNmODhkNzBhL0VWQnJ5dGRVZWk1TXNXTTVNdzlFNW5ZQjRJOXVlaWtjN2M2X2h4LWxGcnhKT0E_ZT01WnFKcEs&slrid=4408caa1-50e1-a000-1630-46242fb45735&originalPath=aHR0cHM6Ly8xZHJ2Lm1zL3cvYy83ZmVmNjIyMmNmODhkNzBhL0VWQnJ5dGRVZWk1TXNXTTVNdzlFNW5ZQjRJOXVlaWtjN2M2X2h4LWxGcnhKT0E_cnRpbWU9THNCR01ENy0zVWc&CID=d83c879a-c449-4e35-b1de-26331ee5f9cb&_SRM=0:G:60。
-                26. 不需要每一則訊息都跟使用者招呼，只有使用者向你問好或回答第一則信息時需要。
-                27. 如果有人跟你打招呼，請引導他問關於你的問題。
+                24. 不需要每一則訊息都跟使用者招呼，只有使用者向你問好或回答第一則信息時需要。
+                25. 如果有人跟你打招呼，請引導他問關於你的問題。
             `
         });
         const result=await model.generateContent(userMessage);
