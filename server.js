@@ -1,15 +1,32 @@
+const express = require('express');
+const cors = require('cors');
+const app = express();
+
+// 這是必要的設定，讓伺服器能讀取 JSON
+app.use(cors());
+app.use(express.json());
+
+// 全域計數器：輪流切換金鑰
+let currentKeyIndex = 0;
+
 app.post('/api/chat', async (req, res) => {
     try {
         const userMessage = req.body.message;
         
-        // 1. 取得金鑰
+        // 1. 取得金鑰陣列 (對應你在 Render 設定的 GEMINI_API_KEYS)
         const rawKeys = process.env.GEMINI_API_KEYS || "";
         const apiKeys = rawKeys.split(',').map(k => k.trim()).filter(k => k !== "");
+
+        if (apiKeys.length === 0) {
+            return res.status(500).json({ error: "伺服器未設定金鑰" });
+        }
+
+        // 2. 輪詢選擇金鑰
         const apiKey = apiKeys[currentKeyIndex % apiKeys.length];
         currentKeyIndex++; 
 
-        // 2. 角色設定內容 (原本的 System Instruction)
-        const systemRole = `
+        // 3. 設定系統指令 (直接寫在內容裡，解決 400 錯誤)
+        const systemPrompt = `
                         你現在角色扮演成「莊可謙」。
                         請遵守以下規則來回答問題：
                         1. 你的名字是莊可謙。
@@ -39,18 +56,12 @@ app.post('/api/chat', async (req, res) => {
                         25. 如果有人跟你打招呼，請引導他問關於你的問題。
                     `;
 
-        // 3. 準備 Payload：把系統設定直接塞進 contents 的第一筆
+        // 4. 準備發送給 Google 的 Payload (高相容性格式)
         const payload = {
-            contents: [
-                {
-                    role: "user",
-                    parts: [{ text: `系統指令：${systemRole}\n\n使用者問題：${userMessage}` }]
-                }
-            ],
-            generationConfig: {
-                maxOutputTokens: 1000,
-                temperature: 0.7
-            }
+            contents: [{
+                role: "user",
+                parts: [{ text: `指令：${systemPrompt}\n\n使用者問題：${userMessage}` }]
+            }]
         };
 
         const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
@@ -64,15 +75,20 @@ app.post('/api/chat', async (req, res) => {
         const data = await response.json();
 
         if (!response.ok) {
-            console.error(`金鑰報錯 (狀態碼: ${response.status}):`, data);
+            console.error(`API 報錯 (${response.status}):`, data);
             return res.status(response.status).json(data);
         }
 
+        // 5. 解析並回傳 AI 文字
         const aiReply = data.candidates[0].content.parts[0].text;
         res.json({ reply: aiReply });
 
     } catch (error) {
-        console.error("後端發生錯誤:", error);
+        console.error("伺服器發生錯誤:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
+
+// 設定通訊埠
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`伺服器運行中: ${PORT}`));
