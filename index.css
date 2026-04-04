@@ -19,7 +19,8 @@ body{
     border: 1px aqua solid;
     border-radius: 10px;
     background-color: black;
-    overflow: scroll;
+    overflow-x: hidden;
+    overflow-y: scroll;
 }
 #input{
     position: absolute;
