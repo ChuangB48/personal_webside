@@ -10,7 +10,7 @@ app.post('/api/chat',async(req,res)=>{
     try{
         const userMessage=req.body.message;
         const model=genAI.getGenerativeModel({ 
-            model:"gemini-2.5-flash",
+            model:"gemini-1.5-flash",
             systemInstruction:`
                 你現在角色扮演成「莊可謙」。
                 請遵守以下規則來回答問題：
