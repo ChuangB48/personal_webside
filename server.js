@@ -5,12 +5,12 @@ const {GoogleGenerativeAI}=require('@google/generative-ai');
 const app=express();
 app.use(cors());
 app.use(express.json());
-const genAI=new GoogleGenerativeAI(process.env.GEMINI_API_KEY,"v1");
+const genAI=new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 app.post('/api/chat',async(req,res)=>{
     try{
         const userMessage=req.body.message;
         const model=genAI.getGenerativeModel({ 
-            model:"gemini-1.5-flash",
+            model:"models/gemini-1.5-flash",
             systemInstruction:`
                 你現在角色扮演成「莊可謙」。
                 請遵守以下規則來回答問題：
