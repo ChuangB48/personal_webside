@@ -1,6 +1,9 @@
 body{
     background-color: black;
 }
+span{
+    font-family: "Huninn", "LXGW WenKai TC", DFKai-sb;
+}
 #title{
     position: absolute;
     left: 50%;
@@ -8,6 +11,8 @@ body{
     transform: translateX(-50%);
     color: aqua;
     font-size: 3em;
+    cursor: default;
+    user-select: none;
 }
 #board{
     position: absolute;
@@ -44,7 +49,9 @@ body{
     height: 3%;
     border: 1px aqua solid;
     border-radius: 100px;
+    overflow: hidden;
     cursor: default;
+    user-select: none;
 }
 #send_span{
     position: absolute;
