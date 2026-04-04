@@ -1,27 +1,38 @@
-const express=require('express');
-const cors=require('cors');
-const app=express();
+const express = require('express');
+const cors = require('cors');
+const app = express();
+
 app.use(cors());
 app.use(express.json());
-let currentKeyIndex=0;
-app.post('/api/chat',async(req,res)=>{
-    const userMessage=req.body.message;
-    const apiKeys=(process.env.GEMINI_API_KEYS||"").split(',').filter(k=>k.trim()!=="");
-    if(apiKeys.length===0){
-        return res.status(500).json({error:"伺服器未設定任何 API Key"});
-    }
-    async function tryRequest(attemptCount=0){
-        if(attemptCount>=apiKeys.length){
-            return res.status(429).json({error:"所有 API 金鑰額度皆已耗盡，請稍後再試。"});
+
+// 全域計數器：用來輪流切換金鑰
+let currentKeyIndex = 0;
+
+app.post('/api/chat', async (req, res) => {
+    try {
+        const userMessage = req.body.message;
+        
+        // 1. 取得 Render 環境變數中的多把金鑰 (以逗號隔開)
+        // 確保你在 Render 設定的 Key 叫做 GEMINI_API_KEYS
+        const rawKeys = process.env.GEMINI_API_KEYS || "";
+        const apiKeys = rawKeys.split(',').map(k => k.trim()).filter(k => k !== "");
+
+        if (apiKeys.length === 0) {
+            console.error("錯誤: 找不到任何 API 金鑰，請檢查 Render 環境變數設定。");
+            return res.status(500).json({ error: "伺服器未設定 API 金鑰" });
         }
-        const apiKey=apiKeys[currentKeyIndex % apiKeys.length];
-        const url=`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-        try {
-            const response=await fetch(url,{
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({
-                    system_instruction:{parts:[{text:`
+
+        // 2. 輪詢邏輯：每次請求挑選一把金鑰
+        const apiKey = apiKeys[currentKeyIndex % apiKeys.length];
+        currentKeyIndex++; 
+
+        // 3. 準備發送給 Google 的請求內容
+        // 直接使用 v1 正式版路徑，避開 404 錯誤
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+        const payload = {
+            system_instruction: {
+                parts: [{ text: `
                         你現在角色扮演成「莊可謙」。
                         請遵守以下規則來回答問題：
                         1. 你的名字是莊可謙。
@@ -49,27 +60,41 @@ app.post('/api/chat',async(req,res)=>{
                         23. 我在學校和另外兩位同學一起參加過兩次科展，題目分別是探討溫差對眼鏡起霧時間快慢之影響和藉實驗以分析不同通訊協定之差異。
                         24. 不需要每一則訊息都跟使用者招呼，只有使用者向你問好或回答第一則信息時需要。
                         25. 如果有人跟你打招呼，請引導他問關於你的問題。
-                    `}]},
-                    contents:[{role:"user",parts:[{text:userMessage}]}]
-                })
+                    ` }]
+            },
+            contents: [{
+                role: "user",
+                parts: [{ text: userMessage }]
+            }]
+        };
+
+        // 4. 使用 Node.js 內建 fetch (Node 18+)
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        // 5. 錯誤處理
+        if (!response.ok) {
+            console.error(`金鑰報錯 (狀態碼: ${response.status}):`, data);
+            return res.status(response.status).json({
+                error: data.error?.message || "Google API 請求失敗",
+                status: response.status
             });
-            const data = await response.json();
-            if (response.status === 429) {
-                currentKeyIndex++;
-                return tryRequest(attemptCount+1);
-            }
-            if(!response.ok){
-                return res.status(response.status).json(data);
-            }
-            currentKeyIndex++; 
-            return res.json({reply:data.candidates[0].content.parts[0].text});
         }
-        catch(error){
-            console.error("連線發生異常:",error);
-            return res.status(500).json({error:"Internal Server Error"});
-        }
+
+        // 6. 回傳成功回覆
+        const aiReply = data.candidates[0].content.parts[0].text;
+        res.json({ reply: aiReply });
+
+    } catch (error) {
+        console.error("後端發生崩潰:", error);
+        res.status(500).json({ error: "Internal Server Error" });
     }
-    await tryRequest();
 });
-const PORT=process.env.PORT||3000;
-app.listen(PORT,()=>console.log(`Server is running on port ${PORT}`));
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`伺服器運行中，埠號: ${PORT}`));
