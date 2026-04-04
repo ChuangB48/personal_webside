@@ -1,37 +1,25 @@
 require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const app = express();
-
+const express=require('express');
+const cors=require('cors');
+const {GoogleGenerativeAI}=require('@google/generative-ai');
+const app=express();
 app.use(cors());
 app.use(express.json());
-
-// 💡 1. 宣告一個計數器，用來輪流換金鑰
 let keyIndex = 0;
-
-app.post('/api/chat', async (req, res) => {
-    try {
-        const userMessage = req.body.message;
-
-        // 💡 2. 取得 Render 環境變數中所有的金鑰 (用逗號隔開)
-        const rawKeys = process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || "";
-        const apiKeys = rawKeys.split(',').map(k => k.trim()).filter(k => k !== "");
-
-        if (apiKeys.length === 0) {
-            return res.status(500).json({ error: "Server_Error", message: "找不到 API 金鑰設定" });
+app.post('/api/chat',async(req, res)=>{
+    try{
+        const userMessage=req.body.message;
+        const rawKeys=process.env.GEMINI_API_KEYS||process.env.GEMINI_API_KEY||"";
+        const apiKeys=rawKeys.split(',').map(k=>k.trim()).filter(k=>k!=="");
+        if(apiKeys.length===0){
+            return res.status(500).json({error:"Server_Error",message:"找不到 API 金鑰設定"});
         }
-
-        // 💡 3. 輪流選擇一把金鑰來建立 SDK 實例
-        const currentKey = apiKeys[keyIndex % apiKeys.length];
-        keyIndex++; // 下次請求換下一把
-        
+        const currentKey=apiKeys[keyIndex%apiKeys.length];
+        keyIndex++;
         console.log(`正在使用第 ${keyIndex % apiKeys.length + 1} 把金鑰請求...`);
-        const genAI = new GoogleGenerativeAI(currentKey);
-
-        // 💡 4. 將模型改為 gemini-1.5-flash (免費版額度最高，且穩定)
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-2.5-flash", 
+        const genAI=new GoogleGenerativeAI(currentKey);
+        const model=genAI.getGenerativeModel({ 
+            model:"gemini-2.5-flash", 
             systemInstruction: `
                 你現在角色扮演成「莊可謙」。
                 請遵守以下規則來回答問題：
@@ -62,25 +50,21 @@ app.post('/api/chat', async (req, res) => {
                 25. 如果有人跟你打招呼，請引導他問關於你的問題。
             `
         });
-
-        const result = await model.generateContent(userMessage);
-        const aiReply = result.response.text();
-        res.json({ reply: aiReply });
-
-    } catch (error) {
-        console.error("❌ API 發生錯誤:", error);
-        
-        // 💡 5. 將 Google 的原始狀態碼傳回給前端
-        const statusCode = error.status || 500;
+        const result=await model.generateContent(userMessage);
+        const aiReply=result.response.text();
+        res.json({reply:aiReply});
+    }
+    catch(error){
+        console.error("API 發生錯誤:",error);
+        const statusCode=error.status||500;
         res.status(statusCode).json({ 
-            error: "Google_API_Error", 
-            message: error.message,
-            status: statusCode
+            error:"Google_API_Error", 
+            message:error.message,
+            status:statusCode
         });
     }
 });
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`✅ 「莊可謙」後端伺服器已啟動`);
+const PORT=process.env.PORT||3000;
+app.listen(PORT,()=>{
+    console.log(`後端伺服器已啟動`);
 });
