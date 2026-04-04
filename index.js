@@ -6,6 +6,7 @@ async function sendMessage(){
     document.getElementById("board").innerHTML+="<div class='msg_board'><div class='user_msg'><span>"+message+"</span></div></div>";
     document.getElementById("input").value="";
     document.getElementById("board").innerHTML+="<div class='msg_board'><div id='loading'><span id='loading_span'>AI思考中...</span></div></div></div>";
+    document.getElementById("board").scrollTo(0,document.getElementById("board"),scrollHeight);
     try{
         const response=await fetch('https://personal-webside.onrender.com/api/chat',{
             method:'POST',
@@ -25,6 +26,7 @@ async function sendMessage(){
         document.getElementById("loading").remove();
         document.getElementById("board").innerHTML+="<div class='msg_board'><div class='error'><span>連線失敗，請確認後端伺服器 (node server.js) 是否已啟動！</span></div></div>";
     }
+    document.getElementById("board").scrollTo(0,document.getElementById("board"),scrollHeight);
 }
 window.addEventListener("keypress",press=>{
     if(press.key=="Enter"){
