@@ -1,14 +1,12 @@
 require('dotenv').config();
-let i=1;
 const express=require('express');
 const cors=require('cors');
 const {GoogleGenerativeAI}=require('@google/generative-ai');
 const app=express();
 app.use(cors());
 app.use(express.json());
-let genAI=new GoogleGenerativeAI(process.env.GEMINI_API_KEY_1);
+const genAI=new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 app.post('/api/chat',async(req,res)=>{
-    genAI=new GoogleGenerativeAI(process.env.GEMINI_API_KEY_+eval(i.toString()));
     try{
         const userMessage=req.body.message;
         const model=genAI.getGenerativeModel({ 
@@ -46,10 +44,6 @@ app.post('/api/chat',async(req,res)=>{
         const result=await model.generateContent(userMessage);
         const aiReply=result.response.text();
         res.json({reply:aiReply});
-        i++;
-        if(i>4){
-            i=1;
-        }
     }
     catch(error){
         console.error("API 錯誤:",error);
