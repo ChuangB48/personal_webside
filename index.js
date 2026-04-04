@@ -36,7 +36,7 @@ async function sendMessage(){
             document.getElementById("board").innerHTML+="<div class='msg_board'><div class='error'><span>目前對話額度已滿，請明天再試或是稍等一分鐘。</span></div></div>";
         }
         else if(error.message==="500"){
-            document.getElementById("board").innerHTML+="<div class='msg_board'><div class='error'><span>後端程式出錯，請聯絡開發者。</span></div></div>";
+            document.getElementById("board").innerHTML+="<div class='msg_board'><div class='error'><span>後端程式出錯，請稍後再試。</span></div></div>";
         }
         else{
             document.getElementById("board").innerHTML+="<div class='msg_board'><div class='error'><span>伺服器尚未開啟，請稍等一分鐘。</span></div></div>";
