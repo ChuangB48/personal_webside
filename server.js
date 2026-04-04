@@ -9,8 +9,8 @@ const genAI=new GoogleGenerativeAI(process.env.API_KEY);
 app.post('/api/chat',async(req,res)=>{
     try{
         const userMessage=req.body.message;
-        const model = genAI.getGenerativeModel({ 
-            model:"gemini-2.5-flash",
+        const model=genAI.getGenerativeModel({ 
+            model:"gemini-1.5-flash",
             systemInstruction:`
                 你現在角色扮演成「莊可謙」。
                 請遵守以下規則來回答問題：
@@ -47,7 +47,11 @@ app.post('/api/chat',async(req,res)=>{
     }
     catch(error){
         console.error("API 錯誤:",error);
-        res.status(500).json({error:"伺服器發生錯誤，請稍後再試。"});
+        const statusCode=error.status||500;
+        res.status(statusCode).json({ 
+            error:"Google_API_Error", 
+            message:error.message 
+        });
     }
 });
 const PORT=3000;
