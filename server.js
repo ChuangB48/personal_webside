@@ -6,21 +6,35 @@ const app=express();
 app.use(cors());
 app.use(express.json());
 let keyIndex = 0;
-app.post('/api/chat',async(req, res)=>{
-    try{
-        const userMessage=req.body.message;
-        const rawKeys=process.env.GEMINI_API_KEYS||process.env.GEMINI_API_KEY||"";
-        const apiKeys=rawKeys.split(',').map(k=>k.trim()).filter(k=>k!=="");
-        if(apiKeys.length===0){
-            return res.status(500).json({error:"Server_Error",message:"找不到 API 金鑰設定"});
-        }
-        const currentKey=apiKeys[keyIndex%apiKeys.length];
+app.post('/api/chat', async (req, res) => {
+    try {
+        const userMessage = req.body.message;
+
+        // 1. 取得多把金鑰
+        const rawKeys = process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || "";
+        const apiKeys = rawKeys.split(',').map(k => k.trim()).filter(k => k !== "");
+
+        if (apiKeys.length === 0) return res.status(500).json({ error: "找不到金鑰" });
+
+        // 2. 輪詢金鑰
+        const apiKey = apiKeys[keyIndex % apiKeys.length];
         keyIndex++;
-        console.log(`正在使用第 ${keyIndex % apiKeys.length + 1} 把金鑰請求...`);
-        const genAI=new GoogleGenerativeAI(currentKey);
-        const model=genAI.getGenerativeModel({ 
-            model:"gemini-1.5-flash", 
-            systemInstruction: `
+
+        // 💡 關鍵修正：建立 SDK 實例時，明確指定 API 版本為 'v1'
+        const genAI = new GoogleGenerativeAI(apiKey);
+        
+        // 💡 這裡加上 { apiVersion: 'v1' } 避開 v1beta 的 404 陷阱
+        const model = genAI.getGenerativeModel(
+            { model: "gemini-1.5-flash" }, 
+            { apiVersion: 'v1' } 
+        );
+
+        // 莊可謙的人格設定
+        const chat = model.startChat({
+            history: [
+                {
+                    role: "user",
+                    parts: [{ text: `
                 你現在角色扮演成「莊可謙」。
                 請遵守以下規則來回答問題：
                 1. 你的名字是莊可謙。
@@ -50,22 +64,25 @@ app.post('/api/chat',async(req, res)=>{
                 25. 我在學校和另外兩位同學一起參加過兩次科展，題目分別是探討溫差對眼鏡起霧時間快慢之影響和藉實驗以分析不同通訊協定之差異。
                 26. 不需要每一則訊息都跟使用者招呼，只有使用者向你問好或回答第一則信息時需要。
                 27. 如果有人跟你打招呼，請引導他問關於你的問題。
-            `
+            ` }],
+                },
+                {
+                    role: "model",
+                    parts: [{ text: "沒問題，我是莊可謙（ChuangB），很高興認識你！" }],
+                }
+            ],
         });
-        const result=await model.generateContent(userMessage);
-        const aiReply=result.response.text();
-        res.json({reply:aiReply});
-    }
-    catch(error){
-        console.error("API 發生錯誤:",error);
-        const statusCode=error.status||500;
-        res.status(statusCode).json({ 
-            error:"Google_API_Error", 
-            message:error.message,
-            status:statusCode
-        });
+
+        const result = await chat.sendMessage(userMessage);
+        const aiReply = result.response.text();
+        res.json({ reply: aiReply });
+
+    } catch (error) {
+        console.error("❌ API 發生錯誤:", error);
+        res.status(error.status || 500).json({ message: error.message });
     }
 });
+
 const PORT=process.env.PORT||3000;
 app.listen(PORT,()=>{
     console.log(`後端伺服器已啟動`);
