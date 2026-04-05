@@ -6,10 +6,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-let keyIndex = 0;
+// 全域變數：記錄現在用到第幾把金鑰
+let currentKeyIndex = 0;
 
 // 莊可謙的人格設定
-const ZHUANG_PROMPT = `
+const ZHUANG_SETTING = `
                 你現在角色扮演成「莊可謙」。
                 請遵守以下規則來回答問題：
                 1. 你的名字是莊可謙。
@@ -45,48 +46,61 @@ app.post('/api/chat', async (req, res) => {
     try {
         const userMessage = req.body.message;
 
-        // 1. 取得金鑰並輪詢
+        // 1. 取得金鑰陣列
         const rawKeys = process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || "";
         const apiKeys = rawKeys.split(',').map(k => k.trim()).filter(k => k !== "");
-        if (apiKeys.length === 0) return res.status(500).json({ error: "找不到金鑰" });
 
-        const apiKey = apiKeys[keyIndex % apiKeys.length];
-        keyIndex++;
+        if (apiKeys.length === 0) {
+            return res.status(500).json({ error: "No_API_Keys", message: "請在環境變數設定 GEMINI_API_KEYS" });
+        }
 
-        // 2. 💡 直接手寫 Google API 網址 (最精確的做法)
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        // 2. 輪詢選擇金鑰 (Key Rotation)
+        const apiKey = apiKeys[currentKeyIndex % apiKeys.length];
+        currentKeyIndex++;
 
-        // 3. 使用 fetch 發送請求
+        // 3. 設定 2026 年穩定模型與網址 (使用 v1beta 以獲得最新功能支援)
+        const modelName = "gemini-3-flash-preview"; 
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+        // 4. 使用 fetch 發送請求 (跳過 SDK)
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{
-                    parts: [{ text: `[系統設定]\n${ZHUANG_PROMPT}\n\n[使用者問題]\n${userMessage}` }]
+                    parts: [{ text: `系統指令：${ZHUANG_SETTING}\n\n使用者訊息：${userMessage}` }]
                 }],
                 generationConfig: {
-                    temperature: 0.7,
-                    maxOutputTokens: 800
+                    temperature: 0.75,
+                    maxOutputTokens: 1000
                 }
             })
         });
 
         const data = await response.json();
 
+        // 5. 錯誤處理 (如果額度滿了，這裡會抓到 429)
         if (!response.ok) {
-            console.error("❌ Google 拒絕請求:", data);
-            return res.status(response.status).json(data);
+            console.error(`Google API 報錯 (${response.status}):`, data);
+            return res.status(response.status).json({
+                error: "Google_API_Error",
+                status: response.status,
+                message: data.error ? data.error.message : "未知錯誤"
+            });
         }
 
-        // 4. 解析回傳內容
+        // 6. 回傳 AI 訊息
         const aiReply = data.candidates[0].content.parts[0].text;
         res.json({ reply: aiReply });
 
     } catch (error) {
-        console.error("❌ 後端發生錯誤:", error.message);
-        res.status(500).json({ error: "Internal Server Error", message: error.message });
+        console.error("伺服器崩潰:", error);
+        res.status(500).json({ error: "Server_Crash", message: error.message });
     }
 });
 
+// Render 會自動分配 PORT，不要寫死 3000
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ 伺服器已啟動`));
+app.listen(PORT, () => {
+    console.log(`✅ 2026 版莊可謙伺服器已啟動，目前使用模型：gemini-3-flash-preview`);
+});
