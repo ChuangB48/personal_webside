@@ -39,63 +39,51 @@ const train=`
     29. 不需要每一則訊息都跟使用者招呼，只有使用者向你問好或回答第一則信息時需要。
     30. 如果有人跟你打招呼，請簡單自我介紹就好，越簡單越好，並引導他問關於你的問題。
 `;
-app.post('/api/chat', async (req, res) => {
-    try {
-        const userMessage = req.body.message;
-        
-        // --- 💡 這裡加入動態時間設定 ---
-        const now = new Date();
-        const currentYear = now.getFullYear(); // 這裡會抓到 2026
-        const currentMonth = now.getMonth() + 1;
-        const currentDate = now.getDate();
-        const timePrompt = `現在的日期是 ${currentYear}年${currentMonth}月${currentDate}日。請記住今年是 ${currentYear} 年。`;
-        // --------------------------
-
-        const rawKeys = process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || "";
-        const apiKeys = rawKeys.split(',').map(k => k.trim()).filter(k => k !== "");
-        
-        if (apiKeys.length === 0) {
-            return res.status(500).json({ error: "No_API_Keys", message: "請在環境變數設定 GEMINI_API_KEYS" });
+app.post('/api/chat',async(req,res)=>{
+    try{
+        const userMessage=req.body.message;
+        const now=new Date();
+        const currentYear=now.getFullYear();
+        const currentMonth=now.getMonth()+1;
+        const currentDate=now.getDate();
+        const timePrompt=`現在的日期是${currentYear}年${currentMonth}月${currentDate}日。請記住今年是${currentYear}年。`;
+        const rawKeys=process.env.GEMINI_API_KEYS||process.env.GEMINI_API_KEY||"";
+        const apiKeys=rawKeys.split(',').map(k=>k.trim()).filter(k=>k!=="");        
+        if(apiKeys.length===0){
+            return res.status(500).json({error:"No_API_Keys",message:"請在環境變數設定GEMINI_API_KEYS"});
         }
-
-        const apiKey = apiKeys[i % apiKeys.length];
+        const apiKey=apiKeys[i%apiKeys.length];
         i++;
-
-        const modelName = "gemini-3.1-flash-lite-preview";
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{
-                    // 💡 在系統指令最前面加上 timePrompt
-                    parts: [{ text: `系統指令：\n${timePrompt}\n${train}\n\n使用者訊息：${userMessage}` }]
+        const modelName="gemini-3.1-flash-lite-preview";
+        const url=`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+        const response=await fetch(url,{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+                contents:[{
+                    parts:[{text:`系統指令：\n${timePrompt}\n${train}\n\n使用者訊息：${userMessage}`}]
                 }],
-                generationConfig: {
-                    temperature: 0.75,
-                    maxOutputTokens: 1000
+                generationConfig:{
+                    temperature:0.75,
+                    maxOutputTokens:1000
                 }
             })
         });
-
-        const data = await response.json();
-        
-        if (!response.ok) {
-            console.error(`Google API 報錯 (${response.status}):`, data);
+        const data=await response.json();
+        if(!response.ok){
+            console.error(`Google API 報錯 (${response.status}):`,data);
             return res.status(response.status).json({
-                error: "Google_API_Error",
-                status: response.status,
-                message: data.error ? data.error.message : "未知錯誤"
+                error:"Google_API_Error",
+                status:response.status,
+                message:data.error?data.error.message:"未知錯誤"
             });
         }
-
-        const aiReply = data.candidates[0].content.parts[0].text;
-        res.json({ reply: aiReply });
+        const aiReply=data.candidates[0].content.parts[0].text;
+        res.json({reply:aiReply});
     }
-    catch (error) {
-        console.error("伺服器崩潰:", error);
-        res.status(500).json({ error: "Server_Crash", message: error.message });
+    catch(error){
+        console.error("伺服器崩潰:",error);
+        res.status(500).json({error:"Server_Crash",message:error.message});
     }
 });
 const PORT=process.env.PORT||3000;
