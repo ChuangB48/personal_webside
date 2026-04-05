@@ -46,7 +46,7 @@ app.post('/api/chat',async (req,res)=>{
         }
         const apiKey=apiKeys[i%apiKeys.length];
         i++;
-        const modelName="gemini-3-flash-preview"; 
+        const modelName="gemini-3.1-flash-lite-preview";
         const url=`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
         const response=await fetch(url,{
             method:'POST',
