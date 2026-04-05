@@ -1,40 +1,15 @@
 require('dotenv').config();
-const express=require('express');
-const cors=require('cors');
-const {GoogleGenerativeAI}=require('@google/generative-ai');
-const app=express();
+const express = require('express');
+const cors = require('cors');
+const app = express();
+
 app.use(cors());
 app.use(express.json());
+
 let keyIndex = 0;
-app.post('/api/chat', async (req, res) => {
-    try {
-        const userMessage = req.body.message;
 
-        // 1. 取得多把金鑰
-        const rawKeys = process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || "";
-        const apiKeys = rawKeys.split(',').map(k => k.trim()).filter(k => k !== "");
-
-        if (apiKeys.length === 0) return res.status(500).json({ error: "找不到金鑰" });
-
-        // 2. 輪詢金鑰
-        const apiKey = apiKeys[keyIndex % apiKeys.length];
-        keyIndex++;
-
-        // 💡 關鍵修正：建立 SDK 實例時，明確指定 API 版本為 'v1'
-        const genAI = new GoogleGenerativeAI(apiKey);
-        
-        // 💡 這裡加上 { apiVersion: 'v1' } 避開 v1beta 的 404 陷阱
-        const model = genAI.getGenerativeModel(
-            { model: "gemini-1.5-flash" }, 
-            { apiVersion: 'v1' } 
-        );
-
-        // 莊可謙的人格設定
-        const chat = model.startChat({
-            history: [
-                {
-                    role: "user",
-                    parts: [{ text: `
+// 莊可謙的人格設定
+const ZHUANG_PROMPT = `
                 你現在角色扮演成「莊可謙」。
                 請遵守以下規則來回答問題：
                 1. 你的名字是莊可謙。
@@ -64,26 +39,54 @@ app.post('/api/chat', async (req, res) => {
                 25. 我在學校和另外兩位同學一起參加過兩次科展，題目分別是探討溫差對眼鏡起霧時間快慢之影響和藉實驗以分析不同通訊協定之差異。
                 26. 不需要每一則訊息都跟使用者招呼，只有使用者向你問好或回答第一則信息時需要。
                 27. 如果有人跟你打招呼，請引導他問關於你的問題。
-            ` }],
-                },
-                {
-                    role: "model",
-                    parts: [{ text: "沒問題，我是莊可謙（ChuangB），很高興認識你！" }],
+            `;
+
+app.post('/api/chat', async (req, res) => {
+    try {
+        const userMessage = req.body.message;
+
+        // 1. 取得金鑰並輪詢
+        const rawKeys = process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || "";
+        const apiKeys = rawKeys.split(',').map(k => k.trim()).filter(k => k !== "");
+        if (apiKeys.length === 0) return res.status(500).json({ error: "找不到金鑰" });
+
+        const apiKey = apiKeys[keyIndex % apiKeys.length];
+        keyIndex++;
+
+        // 2. 💡 直接手寫 Google API 網址 (最精確的做法)
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+        // 3. 使用 fetch 發送請求
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{ text: `[系統設定]\n${ZHUANG_PROMPT}\n\n[使用者問題]\n${userMessage}` }]
+                }],
+                generationConfig: {
+                    temperature: 0.7,
+                    maxOutputTokens: 800
                 }
-            ],
+            })
         });
 
-        const result = await chat.sendMessage(userMessage);
-        const aiReply = result.response.text();
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error("❌ Google 拒絕請求:", data);
+            return res.status(response.status).json(data);
+        }
+
+        // 4. 解析回傳內容
+        const aiReply = data.candidates[0].content.parts[0].text;
         res.json({ reply: aiReply });
 
     } catch (error) {
-        console.error("❌ API 發生錯誤:", error);
-        res.status(error.status || 500).json({ message: error.message });
+        console.error("❌ 後端發生錯誤:", error.message);
+        res.status(500).json({ error: "Internal Server Error", message: error.message });
     }
 });
 
-const PORT=process.env.PORT||3000;
-app.listen(PORT,()=>{
-    console.log(`後端伺服器已啟動`);
-});
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`✅ 伺服器已啟動`));
