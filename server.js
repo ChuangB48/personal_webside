@@ -19,7 +19,7 @@ app.post('/api/chat',async(req, res)=>{
         console.log(`正在使用第 ${keyIndex % apiKeys.length + 1} 把金鑰請求...`);
         const genAI=new GoogleGenerativeAI(currentKey);
         const model=genAI.getGenerativeModel({ 
-            model:"gemini-2.5-flash", 
+            model:"gemini-1.5-flash", 
             systemInstruction: `
                 你現在角色扮演成「莊可謙」。
                 請遵守以下規則來回答問題：
